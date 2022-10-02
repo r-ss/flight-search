@@ -1,3 +1,9 @@
+"""
+Author: Alexey Antipov
+https://github.com/r-ss
+https://www.linkedin.com/in/alexantipov/
+"""
+
 import argparse
 import csv
 import json
@@ -42,6 +48,7 @@ def log(s: str) -> None:
 log(f"Requested {'return' if is_return else 'one-way'} flight from {origin} to {destination} with {bags} bags, datafile={datafile}")
 
 class Airport:
+    """ Represents airport. Used to build Graph """
     def __init__(self, code: str) -> None:
         self.code = code
         self.arrivals: List[Flight] = []
@@ -52,12 +59,13 @@ class Airport:
         codes = []
         for flight in self.departures:
             codes.append(flight.destination)
-        return sorted(list(set(codes)))
+        return sorted(list(set(codes))) # eliminating duplicates
     
     def __repr__(self) -> str:
         return f"Airport {self.code} {len(self.departures)}/{len(self.arrivals)}" # CODE + Departures / Arrivals
 
 class Flight:
+    """ Represents flight from one airport to another """
     def __init__(self, dict: Dict) -> None:
         self.flight_no = dict["flight_no"]
         self.origin = dict["origin"]
@@ -76,7 +84,8 @@ class Flight:
         return f"Flight {self.flight_no} {self.origin} > {self.destination}, dep: {self.departure.strftime(DT_FORMAT_PRINT)}, duration: {self.duration}"
 
 
-class Trip:    
+class Trip:
+    """ Represents complete trip from one airport to another with or without layover(s) """
     def __init__(self, flights: List[Flight] = []) -> None:
         self.flights = flights
         self.trip_origin = self.flights[0].origin
@@ -233,3 +242,11 @@ if __name__ == '__main__':
         if json_output:
             print("-- and now return flights --")
             print_trips_as_json(return_combinations)
+
+
+"""
+
+Thanks for interesting task
+I'm looking for the remote job now.
+
+"""
