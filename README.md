@@ -1,14 +1,44 @@
+# Python weekend entry task solution
 
+**Here is python script for search flights between airports A -> B from raw CSV flights data including meaningful layover options (no less that 1 and no more 6 hours layover)**
 
-examples:
+Task description is [here](https://github.com/kiwicom/python-weekend-entry-task)
 
-python3.10 solution.py csv-data-examples/test0.csv AAA CCC
-- 2 combinations
+## How to run
 
+Just clone and run:
 
-python3.10 solution.py csv-data-examples/example1.csv DHE NIZ
-- 6 combinations
+```bash
+python solution.py csv-data-examples/example1.csv DHE NRX --bags=1 --return
+```
+This request will perform a search for flights from airport DHE -> NRX and back NRX -> DHE for flights which allow at least 1 piece of baggage.
 
+To get output in json format, add `--json` parameter:
 
-python3.10 solution.py csv-data-examples/example3.csv NNB WUE
-- 19 combinations
+```bash
+python solution.py csv-data-examples/example2.csv GXV YOT --json
+```
+This request will find flights GXV -> YOT and print results as JSON
+
+#### Optional arguments
+
+| Argument name | type    | Description              | Notes                        |
+|---------------|---------|--------------------------|------------------------------|
+| `bags`        | integer | Number of requested bags | Optional (defaults to 0)     |
+| `return`      | boolean | Is it a return flight?   | Optional (defaults to false) |
+| `json`        | boolean | Output as JSON           | Optional (defaults to false) |
+
+### Search restrictions
+- In case of a combination of A -> B -> C, the layover time in B will be **not less than 1 hour and more than 6 hours**.
+- No repeating airports in the same trip.
+    - A -> B -> A -> C is not a valid combination for search A -> C.
+- Output is sorted by the final price of the trip.
+
+### Approach
+
+**Python 3.10, only standard library used, no 3rd party packages**
+
+1. From flights data we made list of all airports
+2. From airports build Graph
+3. Using Graph looking for meaningful flights combinations
+4. Sort by trip price, filter by bags number, output as JSON

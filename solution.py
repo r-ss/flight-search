@@ -11,7 +11,7 @@ MIN_LAYOVER = timedelta(hours = 1) # layover time should not be less than 1 hour
 MAX_LAYOVER = timedelta(hours = 6)
 
 parser = argparse.ArgumentParser(description="Flight request")
-parser.add_argument("datafile", help="path to SCV file with flights data")
+parser.add_argument("datafile", help="Path to SCV file with flights data")
 parser.add_argument("origin", help="Source airport code")
 parser.add_argument("destination", help="Destination airport code")
 parser.add_argument("--bags", help="How many bags", default=0)
@@ -72,9 +72,6 @@ class Flight:
     def duration(self) -> timedelta:
         return self.arrival - self.departure
 
-    def toJSON(self):
-        return json.dumps(self, default=lambda o: o.isoformat() if (isinstance(o, datetime)) else o.__dict__, indent=4)
-
     def __repr__(self) -> str:
         return f"Flight {self.flight_no} {self.origin} > {self.destination}, dep: {self.departure.strftime(DT_FORMAT_PRINT)}, duration: {self.duration}"
 
@@ -82,18 +79,10 @@ class Flight:
 class Trip:    
     def __init__(self, flights: List[Flight] = []) -> None:
         self.flights = flights
-        self.origin = self.trip_origin
-        self.destination = self.trip_destination
+        self.trip_origin = self.flights[0].origin
+        self.trip_destination = self.flights[-1].destination
         self.total_price = self.trip_cost
         self.total_time = str(self.trip_duration)
-
-    @property
-    def trip_origin(self) -> str:
-        return self.flights[0].origin
-
-    @property
-    def trip_destination(self) -> str:
-        return self.flights[-1].destination
 
     @property
     def trip_duration(self) -> timedelta:
@@ -112,20 +101,8 @@ class Trip:
             return False
         return True
 
-    # def toJSON(self):
-    #     data = {
-    #         "flights": self.flights,
-    #         "trip_origin": self.trip_origin,
-    #         "trip_destination": self.trip_destination,
-    #         "total_price": self.trip_cost,
-    #         "total_time": str(self.trip_duration)
-    #     }
-    #     return json.dumps(data, default=lambda o: o.isoformat() if (isinstance(o, datetime)) else o.__dict__, indent=4)
-    #     # return json.dumps(self, default=lambda o: o.isoformat() if (isinstance(o, datetime)) else o.__dict__, indent=4)
-
     def __repr__(self) -> str:
         return f"- {'Layover' if len(self.flights) > 1 else 'Direct'} Trip ({len(self.flights)}) {self.trip_origin} > {self.trip_destination} - {self.flights} - trip_duration: {self.trip_duration}, trip_cost: {self.trip_cost}"
-
 
 def read_csv(file) -> List[Flight]:
     list = []
@@ -135,16 +112,6 @@ def read_csv(file) -> List[Flight]:
             list.append(flight)
         csv_file.close()
     return list
-
-def filter_flights(data: List[Flight], origin, destination, bags) -> List[Flight]:
-    # filtered = filter(lambda item: item["origin"] == origin or item["destination"] == destination, data)
-    filtered = filter(lambda item: int(item.bags_allowed) >= bags, data)
-    ls = list(filtered)
-    log(f"filtered { len(ls)} flights")
-    return ls
-
-
-
 
 def search_combinations(flights, paths, origin, destination):
     bin = [] # to store found combinations
@@ -161,88 +128,39 @@ def search_combinations(flights, paths, origin, destination):
         return True
 
     for path in paths:
-
         # log("Processing path:", path)
-
         if len(path) == 2:
             # search direct flights:
-            for index, flight in enumerate(flights):
+            for flight in flights:
                 if flight.origin == origin and flight.destination == destination:
-                    # log("Found direct flight", flight)
                     trip = Trip([flight])
                     if trip.bags_count_valid:
-
-                        # for f in trip.flights:
-                        #     print(f.to_json())
-
                         bin.append(trip)
-                    # log(trip)
-
-                    # flights.pop(index)
-
         if len(path) > 2:
             # search layover flights:
             trip_bin = []
             for i in range(len(path)-1):
-                
                 code_orig = path[i]
                 code_dest = path[i+1]
                 # log(f"Looking for flight from {code_orig} to {code_dest}...")
-                for index, flight in enumerate(flights):
+                for flight in flights:
                     flight = search_flight(code_orig, code_dest)
                     if flight:
                         # check layover time
-                        # log("Found layover flight", flight, trip_bin, i)
                         if len(trip_bin):
                             prev_flight = trip_bin[-1]
                             if not check_layover_time(prev_flight.arrival, flight.departure):
                                 # log("Bad layover", flight.departure - prev_flight.arrival)
-                                # trip_bin = []
                                 continue
-                            # else:
-                                # log("Good layover", flight.departure - prev_flight.arrival)
                         trip_bin.append(flight)
-                        # break
             if len(trip_bin) == len(path)-1:
                 trip = Trip(trip_bin)
                 if trip.bags_count_valid:
-
-                    # for f in trip.flights:
-                    #     print(f.to_json())
-
                     bin.append(trip)
 
-        
-
-
-                # pair = search_flight(o, d)
-                # if pair and check_layover_time(flight.arrival, pair.departure):
-                #     log(pair)
-
-
-
-    # for index, flight in enumerate(flights):
-    #     if flight.origin == origin:
-    #             pair = search_flight(flight.destination, destination)
-    #             if pair and check_layover_time(flight.arrival, pair.departure):
-    #                 bin.append(Trip([flight, pair]))
-    #                 flights.pop(index)
-    #                 continue
-    #     elif flight.destination == destination:
-    #             pair = search_flight(origin, flight.destination)
-    #             if pair and check_layover_time(flight.arrival, pair.departure):
-    #                 bin.append(Trip([pair, flight]))
-    #                 flights.pop(index)
-    #                 continue
-
-
     bin = sorted(bin, key=lambda x: x.trip_cost, reverse=False) # sort trips by total price
-
     for item in bin:
         log(item)
-
-    
-
     return bin
 
 
@@ -289,6 +207,10 @@ def find_all_paths(graph, start, end, path=[]):
                     paths.append(newpath)
         return paths
 
+def print_trips_as_json(trips: List[Trip]) -> None:
+    print(json.dumps(trips, default=lambda o: o.isoformat() if (isinstance(o, datetime)) else o.__dict__, indent=4))
+
+
 if __name__ == '__main__':
     flights = read_csv(datafile)
     airports = construct_airports(flights)
@@ -296,17 +218,18 @@ if __name__ == '__main__':
     paths = find_all_paths(graph, origin, destination)
 
     # log(f"Paths ({len(paths)}): {paths}")
-
-    # filtered = filter_flights(flights, origin, destination, bags)
     combinations = search_combinations(flights, paths, origin, destination)
     log(f"found { len(combinations)} flights combinations")
 
     if json_output:
-        # for trip in combinations:
-        print(json.dumps(combinations, default=lambda o: o.isoformat() if (isinstance(o, datetime)) else o.__dict__, indent=4))
-
+        print_trips_as_json(combinations)
+        
     if is_return:
         return_paths = find_all_paths(graph, destination, origin)
         # log(f"Return paths ({len(return_paths)}): {return_paths}")
         return_combinations = search_combinations(flights, return_paths, destination, origin)
         log(f"found { len(return_combinations)} return flights combinations")
+
+        if json_output:
+            print("-- and now return flights --")
+            print_trips_as_json(return_combinations)
