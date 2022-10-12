@@ -13,12 +13,12 @@ python solution.py csv-data-examples/example1.csv DHE NRX --bags=1 --return
 ```
 This request will perform a search for flights from airport DHE -> NRX and back NRX -> DHE for flights which allow at least 1 piece of baggage.
 
-To get output in json format, add `--json` parameter:
+To get a more readable and compact output into a console instead of JSON format, add `--console` parameter:
 
 ```bash
-python solution.py csv-data-examples/example2.csv GXV YOT --json
+python solution.py csv-data-examples/example2.csv GXV YOT --console
 ```
-This request will find flights GXV -> YOT and print results as JSON
+This request will find flights GXV -> YOT and print results into a console
 
 ## Required positional arguments
 
@@ -34,7 +34,7 @@ This request will find flights GXV -> YOT and print results as JSON
 |---------------|---------|--------------------------|-----------------------------|
 | `bags`        | integer | Number of requested bags | Optional (default is 0)     |
 | `return`      | boolean | Is it a return flight?   | Optional (default is false) |
-| `json`        | boolean | Output as JSON           | Optional (default is false) |
+| `console`     | boolean | Output into a console    | Optional (default is false) |
 
 ## Search restrictions
 - In case of a combination of A -> B -> C, the layover time in B will be **not less than 1 hour and more than 6 hours**.
@@ -45,8 +45,4 @@ This request will find flights GXV -> YOT and print results as JSON
 ## Approach
 
 Python 3.10, only standard library used, no 3rd party packages
-
-1. From flights data we made list of all airports
-2. From airports build Graph
-3. Using Graph looking for meaningful flights combinations
-4. Sort by trip price, filter by bags number, output as JSON
+Graph, deep first search
